@@ -4,46 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Salary Tracker 💰</title>
+    <title>Salary Tracker Pro 💰</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; --card: #ffffff; }
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; --card: #ffffff; --danger: #e74c3c; --success: #27ae60; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--primary); }
         .container { max-width: 500px; margin: 0 auto; }
-        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 20px; }
+        h1 { font-size: 1.5rem; text-align: center; margin: 10px 0 20px; }
         .card { background: var(--card); padding: 18px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
+        
+        .exchange-rate-bar { background: #fff; padding: 10px 15px; border-radius: 50px; display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 0.85rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
+        .rate-value { font-weight: bold; color: var(--accent); }
+        .refresh-btn { cursor: pointer; color: #95a5a6; font-size: 1rem; }
+
         .form-group { margin-bottom: 12px; }
         label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 0.85rem; color: #666; }
         select, input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; height: 45px; box-sizing: border-box; }
         .time-row { display: flex; gap: 10px; }
         .time-select-group { display: flex; align-items: center; gap: 5px; background: #f9f9f9; padding: 5px; border-radius: 8px; border: 1px solid #eee; flex: 1; }
         .time-select-group select { border: none; background: transparent; flex: 1; height: 35px; }
+        
         button { width: 100%; padding: 15px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .summary-box { display: flex; justify-content: space-between; background: #eef2f3; padding: 15px; border-radius: 8px; text-align: center; }
+        .btn-secondary { background: #95a5a6; padding: 10px; font-size: 0.8rem; margin-top: 5px; }
+        
+        .summary-box { background: #eef2f3; padding: 15px; border-radius: 8px; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; text-align: center; gap: 10px; }
+        .summary-label { font-size: 0.75rem; color: #7f8c8d; margin-bottom: 4px; }
+        .summary-val { font-weight: bold; display: block; }
+        
         .list-item { background: #fff; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ddd; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .tag { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; color: white; font-weight: bold; margin-right: 5px; }
-        .delete-btn { color: #e74c3c; font-size: 1.8rem; padding: 5px 15px; cursor: pointer; line-height: 1; }
+        .item-info b { font-size: 1.1rem; }
+        .twd-sub { font-size: 0.75rem; color: #7f8c8d; display: block; margin-top: 2px; }
+        .delete-btn { color: var(--danger); font-size: 1.8rem; padding: 5px 15px; cursor: pointer; line-height: 1; }
+        
+        .modal { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-top: 10px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .job-manage-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>Salary Tracker 💰</h1>
+
+    <div class="exchange-rate-bar">
+        <span>1 AUD ≈ <span id="current-rate" class="rate-value">載入中...</span> TWD</span>
+        <span class="refresh-btn" onclick="fetchRate()">🔄</span>
+    </div>
     
     <div class="card">
         <div class="form-group"><label>上班日期</label><input type="date" id="date"></div>
         <div class="form-group">
             <label>工作項目</label>
             <select id="jobSelect" onchange="applyJobConfig()"></select>
+            <button class="btn-secondary" onclick="toggleModal()">⚙️ 管理工作項目</button>
+        </div>
+
+        <div id="customModal" class="modal">
+            <h3 style="margin:0 0 10px; font-size:1rem;">新增工作項目</h3>
+            <div class="form-group"><input type="text" id="newName" placeholder="項目名稱 (例如：Melbourne Cafe)"></div>
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <input type="number" id="newRate" value="28" style="flex:2;" placeholder="時薪">
+                <input type="color" id="newColor" value="#3498db" style="flex:1; padding:2px; height:45px;">
+            </div>
+            <button onclick="addNewJob()" style="padding:10px; font-size:0.9rem;">儲存新項目</button>
+            <hr style="margin:15px 0; border:0; border-top:1px solid #eee;">
+            <h3 style="font-size:1rem;">現有工作清單</h3>
+            <div id="customJobList"></div>
+            <button class="btn-secondary" onclick="toggleModal()" style="width:100%; margin-top:10px;">關閉管理介面</button>
         </div>
         
         <div class="time-row">
-            <div class="form-group" style="flex:1;">
-                <label>上班時間</label>
-                <div class="time-select-group"><select id="sh"></select>：<select id="sm"></select></div>
-            </div>
-            <div class="form-group" style="flex:1;">
-                <label>下班時間</label>
-                <div class="time-select-group"><select id="eh"></select>：<select id="em"></select></div>
-            </div>
+            <div class="form-group" style="flex:1;"><label>上班時間</label><div class="time-select-group"><select id="sh"></select>：<select id="sm"></select></div></div>
+            <div class="form-group" style="flex:1;"><label>下班時間</label><div class="time-select-group"><select id="eh"></select>：<select id="em"></select></div></div>
         </div>
 
         <div class="form-group"><label>時薪 (AUD)</label><input type="number" id="rate" step="0.1"></div>
@@ -52,8 +82,11 @@
 
     <div class="card">
         <div class="summary-box">
-            <div><small>總時數</small><br><b id="total-hours">0</b> h</div>
-            <div><small>預計薪資</small><br><b id="total-pay" style="color: #27ae60;">$0.00</b></div>
+            <div class="summary-grid">
+                <div><span class="summary-label">總時數</span><span id="total-hours" class="summary-val">0 h</span></div>
+                <div><span class="summary-label">總計 (AUD)</span><span id="total-pay" class="summary-val" style="color:var(--success);">$0.00</span></div>
+                <div><span class="summary-label">約台幣 (TWD)</span><span id="total-twd" class="summary-val" style="color:var(--accent);">NT$0</span></div>
+            </div>
         </div>
         <div id="record-list" style="margin-top:15px;"></div>
         <button onclick="clearAll()" style="background:#95a5a6; padding:8px; font-size:0.7rem; color:white; border:none; border-radius:5px; width:auto; margin:20px auto 0; display:block;">清空本機所有歷史紀錄</button>
@@ -61,113 +94,145 @@
 </div>
 
 <script>
-    /**
-     * 【自訂工作項目區】
-     * 你可以在這裡隨時新增、修改或刪除工作項目。
-     * 修改後上傳 GitHub，手機重新整理即可同步選單。
-     */
-    const JOB_CONFIGS = [
-        { id: "drink",   name: "飲料店", color: "#e67e22", defaultRate: 28.0 },
-        { id: "balloon", name: "熱氣球", color: "#9b59b6", defaultRate: 30.0 },
-        { id: "farm",    name: "農場",   color: "#27ae60", defaultRate: 26.5 },
-        { id: "other",   name: "兼職",   color: "#34495e", defaultRate: 25.0 }
-    ];
-
+    let currentRate = 22.7;
+    let customJobs = JSON.parse(localStorage.getItem('my_custom_jobs') || '[]');
     let records = JSON.parse(localStorage.getItem('my_salary_data') || '[]');
+
+    async function fetchRate() {
+        const rateEl = document.getElementById('current-rate');
+        rateEl.innerText = "更新中...";
+        try {
+            const response = await fetch('https://open.er-api.com/v6/latest/AUD');
+            const data = await response.json();
+            currentRate = data.rates.TWD;
+            rateEl.innerText = currentRate.toFixed(2);
+            updateUI(); 
+        } catch (error) {
+            rateEl.innerText = "連線失敗";
+        }
+    }
 
     function init() {
         document.getElementById('date').valueAsDate = new Date();
-        const select = document.getElementById('jobSelect');
-        JOB_CONFIGS.forEach(job => select.add(new Option(job.name, job.id)));
-
+        renderJobSelect();
         const sh = document.getElementById('sh'), eh = document.getElementById('eh');
         const sm = document.getElementById('sm'), em = document.getElementById('em');
-        for(let i=0; i<24; i++) {
-            let h = String(i).padStart(2,'0');
-            sh.add(new Option(h, h)); eh.add(new Option(h, h));
-        }
-        for(let i=0; i<60; i+=10) {
-            let m = String(i).padStart(2,'0');
-            sm.add(new Option(m, m)); em.add(new Option(m, m));
-        }
+        for(let i=0; i<24; i++) { let h = String(i).padStart(2,'0'); sh.add(new Option(h, h)); eh.add(new Option(h, h)); }
+        for(let i=0; i<60; i+=10) { let m = String(i).padStart(2,'0'); sm.add(new Option(m, m)); em.add(new Option(m, m)); }
         sh.value = "09"; eh.value = "17";
+        fetchRate();
         applyJobConfig();
         updateUI();
     }
 
+    function renderJobSelect() {
+        const select = document.getElementById('jobSelect');
+        const currentVal = select.value;
+        select.innerHTML = '';
+        if (customJobs.length === 0) {
+            select.add(new Option("-- 請先新增工作項目 --", ""));
+        } else {
+            customJobs.forEach(job => select.add(new Option(job.name, job.id)));
+        }
+        if (currentVal) select.value = currentVal;
+        renderCustomJobList();
+    }
+
+    function renderCustomJobList() {
+        const listDiv = document.getElementById('customJobList');
+        listDiv.innerHTML = customJobs.length === 0 ? '<small style="color:#999">目前沒有自訂項目。</small>' : '';
+        customJobs.forEach(job => {
+            const div = document.createElement('div');
+            div.className = 'job-manage-item';
+            div.innerHTML = `<span><span style="color:${job.color}">●</span> ${job.name} ($${job.defaultRate})</span>
+                             <span style="color:var(--danger); cursor:pointer; font-size:0.8rem;" onclick="removeCustomJob('${job.id}')">刪除</span>`;
+            listDiv.appendChild(div);
+        });
+    }
+
+    function toggleModal() {
+        const m = document.getElementById('customModal');
+        m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function addNewJob() {
+        const name = document.getElementById('newName').value;
+        const rate = parseFloat(document.getElementById('newRate').value);
+        const color = document.getElementById('newColor').value;
+        if(!name) return alert("請輸入名稱");
+        const newJob = { id: "custom_" + Date.now(), name, color, defaultRate: rate };
+        customJobs.push(newJob);
+        localStorage.setItem('my_custom_jobs', JSON.stringify(customJobs));
+        renderJobSelect();
+        document.getElementById('jobSelect').value = newJob.id;
+        applyJobConfig();
+        document.getElementById('newName').value = '';
+    }
+
+    function removeCustomJob(id) {
+        if(confirm('確定要刪除嗎？')) {
+            customJobs = customJobs.filter(j => j.id !== id);
+            localStorage.setItem('my_custom_jobs', JSON.stringify(customJobs));
+            renderJobSelect();
+            applyJobConfig();
+        }
+    }
+
     function applyJobConfig() {
         const jobId = document.getElementById('jobSelect').value;
-        const job = JOB_CONFIGS.find(j => j.id === jobId);
-        if(job) document.getElementById('rate').value = job.defaultRate;
+        const job = customJobs.find(j => j.id === jobId);
+        document.getElementById('rate').value = job ? job.defaultRate : "";
     }
 
     function addRecord() {
-        const date = document.getElementById('date').value;
         const jobId = document.getElementById('jobSelect').value;
-        const job = JOB_CONFIGS.find(j => j.id === jobId);
+        const job = customJobs.find(j => j.id === jobId);
+        if(!job) return alert("請選擇工作項目");
+        const date = document.getElementById('date').value;
         const rate = parseFloat(document.getElementById('rate').value);
-        const startTime = parseInt(document.getElementById('sh').value) * 60 + parseInt(document.getElementById('sm').value);
-        const endTime = parseInt(document.getElementById('eh').value) * 60 + parseInt(document.getElementById('em').value);
-        
-        let diff = endTime - startTime;
-        if (diff <= 0) diff += 1440; // 跨夜處理
-        
-        const hours = diff / 60;
+        const sTotal = parseInt(document.getElementById('sh').value) * 60 + parseInt(document.getElementById('sm').value);
+        const eTotal = parseInt(document.getElementById('eh').value) * 60 + parseInt(document.getElementById('em').value);
+        let diff = eTotal - sTotal;
+        if (diff <= 0) diff += 1440;
         records.push({
-            id: Date.now(),
-            date, 
-            jobName: job.name, 
-            jobColor: job.color,
+            id: Date.now(), date, jobName: job.name, jobColor: job.color,
             timeRange: `${document.getElementById('sh').value}:${document.getElementById('sm').value}-${document.getElementById('eh').value}:${document.getElementById('em').value}`,
-            hours, 
-            rate, 
-            total: hours * rate
+            hours: diff / 60, rate, total: (diff / 60) * rate
         });
         save();
     }
 
-    function deleteRecord(id) {
-        if(confirm('確定要刪除這筆紀錄嗎？')) {
-            records = records.filter(r => r.id !== id);
-            save();
-        }
-    }
-
-    function clearAll() {
-        if(confirm('警告：這將會永久刪除此裝置上的所有紀錄！')) {
-            records = [];
-            save();
-        }
-    }
-
-    function save() {
-        localStorage.setItem('my_salary_data', JSON.stringify(records));
-        updateUI();
-    }
+    function deleteRecord(id) { if(confirm('確定刪除？')) { records = records.filter(r => r.id !== id); save(); } }
+    function clearAll() { if(confirm('要清空所有紀錄嗎？')) { records = []; save(); } }
+    function save() { localStorage.setItem('my_salary_data', JSON.stringify(records)); updateUI(); }
 
     function updateUI() {
         const listDiv = document.getElementById('record-list');
         listDiv.innerHTML = '';
         let totalH = 0, totalP = 0;
-
+        
         records.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(r => {
-            totalH += r.hours;
-            totalP += r.total;
+            totalH += r.hours; totalP += r.total;
+            const singleTwd = Math.round(r.total * currentRate); // 單筆台幣換算
+            
             const item = document.createElement('div');
             item.className = 'list-item';
             item.style.borderLeftColor = r.jobColor;
             item.innerHTML = `
-                <div>
+                <div class="item-info">
                     <span class="tag" style="background:${r.jobColor}">${r.jobName}</span>
-                    <b>$${r.total.toFixed(2)}</b><br>
+                    <b>$${r.total.toFixed(2)}</b>
+                    <span class="twd-sub">≈ NT$ ${singleTwd.toLocaleString()}</span>
                     <small>${r.date} | ${r.timeRange} (${r.hours.toFixed(1)}h)</small>
                 </div>
                 <div class="delete-btn" onclick="deleteRecord(${r.id})">×</div>
             `;
             listDiv.appendChild(item);
         });
-        document.getElementById('total-hours').innerText = totalH.toFixed(1);
-        document.getElementById('total-pay').innerText = `$${totalP.toFixed(2)}`;
+
+        document.getElementById('total-hours').innerText = totalH.toFixed(1) + " h";
+        document.getElementById('total-pay').innerText = "$" + totalP.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('total-twd').innerText = "NT$ " + Math.round(totalP * currentRate).toLocaleString();
     }
     init();
 </script>
