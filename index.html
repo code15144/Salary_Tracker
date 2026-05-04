@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>My Salary Tracker 💰</title>
+    <title>Salary Tracker 💰</title>
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; --card: #ffffff; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--primary); }
@@ -28,7 +28,6 @@
 <div class="container">
     <h1>Salary Tracker 💰</h1>
     
-    <!-- 輸入區 -->
     <div class="card">
         <div class="form-group"><label>上班日期</label><input type="date" id="date"></div>
         <div class="form-group">
@@ -51,7 +50,6 @@
         <button onclick="addRecord()">新增此筆紀錄</button>
     </div>
 
-    <!-- 統計與列表 -->
     <div class="card">
         <div class="summary-box">
             <div><small>總時數</small><br><b id="total-hours">0</b> h</div>
@@ -65,7 +63,8 @@
 <script>
     /**
      * 【自訂工作項目區】
-     * 未來想增加工作、改顏色或改時薪，直接修改下方陣列即可
+     * 你可以在這裡隨時新增、修改或刪除工作項目。
+     * 修改後上傳 GitHub，手機重新整理即可同步選單。
      */
     const JOB_CONFIGS = [
         { id: "drink",   name: "飲料店", color: "#e67e22", defaultRate: 28.0 },
@@ -76,15 +75,11 @@
 
     let records = JSON.parse(localStorage.getItem('my_salary_data') || '[]');
 
-    // 初始化頁面
     function init() {
         document.getElementById('date').valueAsDate = new Date();
-        
-        // 填充工作選單
         const select = document.getElementById('jobSelect');
         JOB_CONFIGS.forEach(job => select.add(new Option(job.name, job.id)));
 
-        // 填充時間選單 (00-23, 00-50)
         const sh = document.getElementById('sh'), eh = document.getElementById('eh');
         const sm = document.getElementById('sm'), em = document.getElementById('em');
         for(let i=0; i<24; i++) {
@@ -95,14 +90,11 @@
             let m = String(i).padStart(2,'0');
             sm.add(new Option(m, m)); em.add(new Option(m, m));
         }
-        
-        // 預設時間
         sh.value = "09"; eh.value = "17";
         applyJobConfig();
         updateUI();
     }
 
-    // 切換工作時自動填入預設時薪
     function applyJobConfig() {
         const jobId = document.getElementById('jobSelect').value;
         const job = JOB_CONFIGS.find(j => j.id === jobId);
@@ -114,12 +106,11 @@
         const jobId = document.getElementById('jobSelect').value;
         const job = JOB_CONFIGS.find(j => j.id === jobId);
         const rate = parseFloat(document.getElementById('rate').value);
-        
         const startTime = parseInt(document.getElementById('sh').value) * 60 + parseInt(document.getElementById('sm').value);
         const endTime = parseInt(document.getElementById('eh').value) * 60 + parseInt(document.getElementById('em').value);
         
         let diff = endTime - startTime;
-        if (diff <= 0) diff += 1440; // 處理跨夜情況
+        if (diff <= 0) diff += 1440; // 跨夜處理
         
         const hours = diff / 60;
         records.push({
@@ -132,7 +123,6 @@
             rate, 
             total: hours * rate
         });
-        
         save();
     }
 
@@ -160,11 +150,9 @@
         listDiv.innerHTML = '';
         let totalH = 0, totalP = 0;
 
-        // 依日期排序（新的在前）
         records.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(r => {
             totalH += r.hours;
             totalP += r.total;
-            
             const item = document.createElement('div');
             item.className = 'list-item';
             item.style.borderLeftColor = r.jobColor;
@@ -178,11 +166,9 @@
             `;
             listDiv.appendChild(item);
         });
-
         document.getElementById('total-hours').innerText = totalH.toFixed(1);
         document.getElementById('total-pay').innerText = `$${totalP.toFixed(2)}`;
     }
-
     init();
 </script>
 </body>
